@@ -1,0 +1,18 @@
+[package]
+name = "poe-clone"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = { version = "0.14", features = ["dynamic_linking"] }
+bevy-inspector-egui = { version = "0.27" }
+pathfinding = "4.3"
+bevy_ecs_tilemap = "0.14"
+bevy_prototype_lyon = "0.13.0"
+# Enable a small amount of optimization in the dev profile.
+[profile.dev]
+opt-level = 1
+
+# Enable a large amount of optimization in the dev profile for dependencies.
+[profile.dev.package."*"]
+opt-level = 3
