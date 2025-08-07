@@ -4,7 +4,7 @@ use pathfinding::prelude::astar;
 use bevy_prototype_lyon::prelude::*;
 
 
-const TILE_SIZE: f32 = 16.0;
+const TILE_SIZE: f32 = 32.0;
 
 #[derive(Resource)]
 pub struct WalkableMap {
@@ -143,13 +143,13 @@ fn load_map_from_csv(
     // Example CSV data - in a real game, you'd load this from a file
     let csv_data = r#"0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
                                     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+                                    0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0
+                                    0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0
+                                    0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0
+                                    0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0
+                                    0,0,0,0,0,0,0,1,0,1,1,1,1,0,0,0,0,0,0,0
+                                    0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0
+                                    0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0
                                     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
                                     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
                                     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -230,19 +230,19 @@ fn load_map_from_csv(
     let start_world = tile_center_local + tilemap_transform.translation.truncate();
 
     commands.spawn((
-        SpatialBundle {
-            transform: Transform::from_translation(start_world.extend(1.0)),
-            ..default()
-        },
-        // SpriteBundle {
-        //     sprite: Sprite {
-        //         custom_size: Some(Vec2::splat(TILE_SIZE - 2.0)),
-        //         color: Color::rgb(0.2, 0.2, 1.0),
-        //         ..default()
-        //     },
+        // SpatialBundle {
         //     transform: Transform::from_translation(start_world.extend(1.0)),
         //     ..default()
         // },
+        SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(Vec2::splat(TILE_SIZE - 2.0)),
+                color: Color::rgb(0.2, 0.2, 1.0),
+                ..default()
+            },
+            transform: Transform::from_translation(start_world.extend(1.0)),
+            ..default()
+        },
         Player,
         PathQueue::default(),
     ));
