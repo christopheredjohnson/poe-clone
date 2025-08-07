@@ -95,6 +95,12 @@ struct TilemapTransform(Transform);
 #[derive(Resource)]
 struct MapLoaded(bool);
 
+
+#[derive(Component)]
+struct HoveredTile;
+
+
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
@@ -110,6 +116,7 @@ fn main() {
                 move_along_path,
                 camera_follow_player,
                 draw_path_gizmos,
+                highlight_hovered_tile,
             ),
         )
         .run();
@@ -129,6 +136,50 @@ fn draw_path_gizmos(
         }
     }
 }
+
+fn highlight_hovered_tile(
+    windows: Query<&Window>,
+    camera_q: Query<(&Camera, &GlobalTransform)>,
+    tilemap_transform: Option<Res<TilemapTransform>>,
+    map: Option<Res<WalkableMap>>,
+    mut commands: Commands,
+    mut hovered_q: Query<(Entity, &mut Transform), With<HoveredTile>>,
+) {
+    let Some(tilemap_transform) = tilemap_transform else { return };
+    let Some(map) = map else { return };
+    let Ok(window) = windows.get_single() else { return };
+    let Ok((camera, cam_tf)) = camera_q.get_single() else { return };
+    let Some(cursor_pos) = window.cursor_position() else { return };
+    let Some(world_pos) = camera.viewport_to_world(cam_tf, cursor_pos) else { return };
+
+    let hovered_pos = world_pos.origin.truncate() - tilemap_transform.0.translation.truncate();
+    let hovered_tile = world_to_tile_pos(hovered_pos);
+
+    // ✨ Only show highlight if tile is walkable
+    if !map.is_walkable(hovered_tile) {
+        return;
+    }
+
+    let new_world_pos = tile_pos_to_world_centered(hovered_tile, &tilemap_transform.0).extend(2.0);
+
+    if let Ok((_, mut tf)) = hovered_q.get_single_mut() {
+        tf.translation = new_world_pos;
+    } else {
+        commands.spawn((
+            SpriteBundle {
+                sprite: Sprite {
+                    color: Color::rgba(1.0, 1.0, 0.0, 0.4),
+                    custom_size: Some(Vec2::splat(TILE_SIZE)),
+                    ..default()
+                },
+                transform: Transform::from_translation(new_world_pos),
+                ..default()
+            },
+            HoveredTile,
+        ));
+    }
+}
+
 
 
 fn load_map_from_csv(
@@ -324,7 +375,7 @@ fn move_along_path(
         if pos.distance(*next_target) < 2.0 {
             path.0.remove(0);
         }
-    } else if !path.0.is_empty() {
+    } else {
         commands.entity(entity).remove::<PathQueue>();
     }
 }
@@ -360,18 +411,22 @@ fn find_path(start: TilePos, end: TilePos, map: &WalkableMap) -> Option<Vec<Tile
         |p| {
             let mut neighbors = vec![];
             for (dx, dy) in [
-                (-1, 0),
-                (1, 0),
-                (0, -1),
-                (0, 1),
-                (-1, -1),
-                (1, -1),
-                (-1, 1),
-                (1, 1),
+                (-1, 0), (1, 0), (0, -1), (0, 1),
+                (-1, -1), (1, -1), (-1, 1), (1, 1),
             ] {
                 let new_x = p.x.wrapping_add_signed(dx);
                 let new_y = p.y.wrapping_add_signed(dy);
                 let next = TilePos { x: new_x, y: new_y };
+
+                // Prevent diagonal corner-cutting
+                if dx != 0 && dy != 0 {
+                    let adj1 = TilePos { x: p.x.wrapping_add_signed(dx), y: p.y };
+                    let adj2 = TilePos { x: p.x, y: p.y.wrapping_add_signed(dy) };
+                    if !map.is_walkable(adj1) || !map.is_walkable(adj2) {
+                        continue;
+                    }
+                }
+
                 if map.is_walkable(next) {
                     neighbors.push((next, 1));
                 }
